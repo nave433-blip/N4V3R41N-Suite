@@ -1,0 +1,20 @@
+{
+  "apple_servers": [
+    {"service": "Activation", "domain": "activation.apple.com", "ips": ["17.188.131.25", "17.188.131.26", "17.188.131.27", "17.188.131.28"], "purpose": "Device activation"},
+    {"service": "iCloud", "domain": "setup.icloud.com", "ips": ["17.188.131.25"], "purpose": "iCloud setup"},
+    {"service": "FMI", "domain": "fmipmobile.icloud.com", "ips": ["17.188.131.25"], "purpose": "Find My iPhone checks"},
+    {"service": "APNs", "domain": "api.push.apple.com", "ips": ["17.188.131.25"], "purpose": "Push notifications"},
+    {"service": "iTunes", "domain": "albert.apple.com", "ips": ["17.188.131.25"], "purpose": "iTunes Store API"}
+  ],
+  "bypass_servers": [
+    {"name": "Gesalt Tor", "address": "gesalt321674.onion", "status": "Online"},
+    {"name": "CloudPass Tor", "address": "cloudpass789.onion", "status": "Online"},
+    {"name": "SpiderPRO Tor", "address": "spiderpro456.onion", "status": "Online"},
+    {"name": "Sliver", "address": "209.126.10.100", "status": "Online"}
+  ],
+  "spoofing_targets": [
+    "activation.apple.com",
+    "setup.icloud.com",
+    "fmipmobile.icloud.com"
+  ]
+}
