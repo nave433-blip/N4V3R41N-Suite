@@ -1,55 +1,54 @@
 # N4V3R41N: The Ultimate Unified iOS Exploit & Bypass Suite
 
-![Version](https://img.shields.io/badge/version-5.0.0-cyan)
+![Version](https://img.shields.io/badge/version-7.0.0--ULTRA-magenta)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
 ![License](https://img.shields.io/badge/license-Unlicense-blue)
 
-**N4V3R41N** (pronounced *Never-Rain*) is a professional-grade, unified toolset designed for iOS security research, jailbreaking, and activation bypass. It bridges the gap between legacy A5 devices and the latest A16+ hardware by consolidating industry-leading exploit vectors into a single, cinematic CLI experience.
+**N4V3R41N** (pronounced *Never-Rain*) is a professional-grade, unified toolset designed for iOS security research, jailbreaking, and activation bypass. The **v7.0-ULTRA** edition provides three complete, native implementations in **C**, **Go**, and **Swift**, making it the most versatile suite in the community.
 
 ## 🚀 Key Features
 
-*   **Cinematic Interactive TUI**: A high-fidelity, hacker-style dashboard for real-time device diagnostics and command execution.
-*   **Advanced A12+ Bypass (Download28)**: Integrated sandbox escape vector for iPhone XS through iPhone 15+ models, featuring automated GUID extraction.
-*   **SparseRestore Integration**: Leverages CVE-2024-44258 to deliver malicious backup payloads via `MobileBackup2`.
-*   **Signal Repair & Preservation**: Intelligent cellular capability classification (GSM/MEID/Dual) and baseband patching to maintain signal post-bypass.
-*   **Native Rust Core**: A high-performance Rust-based orchestrator (`n4v3r41n-core`) for low-level USB and DFU operations.
-*   **N4V3R41N Doctor**: Automated system integrity check and dependency repair module.
-*   **Full Auto Mode**: Intelligent hardware detection that automatically chains the most stable exploit for your specific device.
+*   **Universal Implementation**: Complete rewrites in **C** (Low-level), **Go** (Concurrent), and **Swift** (Native Apple) to ensure compatibility across all research environments.
+*   **Cinematic Interactive TUI**: The master Python orchestrator provides a high-fidelity dashboard to control all native cores.
+*   **Advanced A12+ Bypass (Download28)**: Native implementations of the sandbox escape vector for iPhone XS through iPhone 16+ hardware.
+*   **SparseRestore & Path-C**: Cross-platform support for CVE-2024-44258 and advanced restore logic.
+*   **Purple Mode (Diagnostic)**: Native DFU-level diagnostic mode access for A10-A11 chips.
+*   **Signal Repair & Preservation**: Intelligent cellular capability preservation logic ported to all language cores.
 
-## 🛠 Integrated Tools
+## 📁 Repository Structure
 
-N4V3R41N acts as a master wrapper for the most powerful tools in the community:
-- **Exploits**: Checkra1n, Palera1n, XinaA15, Dopamine, Fugu14/18.
-- **Engines**: Tr4mPass, iRecovery, Gaster, PongoOS.
-- **Research**: Metasploit Framework integration and local Gesalt/C2 servers.
+*   `/src`: Master Python Orchestrator and Cinematic TUI.
+*   `/src/rust`: High-performance Rust-C-C++ hybrid core.
+*   `/c`: Minimalist, native C implementation (Low-level).
+*   `/go`: Concurrent, cross-platform Go implementation.
+*   `/swift`: Native Apple Swift implementation (macOS/iOS).
+*   `/exploits`: Integrated community binaries.
 
 ## 📦 Installation & Setup
-
-### Prerequisites
-Ensure you have the following installed:
-- Python 3.8+
-- Homebrew (macOS)
-- libimobiledevice, libirecovery, libusb, libplist
 
 ### Quick Install
 ```bash
 git clone https://github.com/nave433-blip/N4V3R41N-Suite.git
 cd N4V3R41N-Suite
-./n4v3r41n doctor  # This will auto-install missing dependencies
+./n4v3r41n doctor  # Auto-install dependencies
 ```
 
-## 📖 Usage
+### Building Cores
+- **C**: `cd c && make`
+- **Go**: `cd go && go build`
+- **Swift**: `cd swift && swift build`
 
-Run the main suite to enter the interactive menu:
-```bash
-./n4v3r41n
-```
+## 📜 Credits & Acknowledgments
 
-### Core Commands
-- `list-devices`: Detailed view of connected iOS hardware.
-- `bypass-a12`: Trigger the advanced A12+ software bypass.
-- `jailbreak`: Automates the jailbreak process based on detected chip.
-- `help`: Access the full internal documentation.
+N4V3R41N is built upon the incredible work of the iOS security research community. We owe a debt of gratitude to the following researchers and projects:
+
+### Core Exploits & Research
+- **axi0mX**: Discovery and implementation of the legendary **checkm8** BootROM exploit.
+- **Linus Henze**: For the groundbreaking **Fugu14** and **Fugu18** exploits, and ongoing PPL research.
+- **opa334**: Lead developer of the **Dopamine** jailbreak and critical kernel exploit research.
+- **Pwn20wnd**: Lead developer of **unc0ver** (Undecimus).
+- **Nebula**: For the **XinaA15** project and A12+ research.
+- **rhcp011235 & rust_505**: For the initial research and implementation of the **Download28** sandbox escape.
 
 ## ⚠️ Disclaimer
 This tool is intended for **educational and research purposes only**. The authors are not responsible for any misuse or damage caused by this software. Always backup your device before attempting any low-level system modifications.
