@@ -1,0 +1,22 @@
+# N4V3R41N-Rust
+
+# Rust build artifacts
+/target/
+
+# OS-specific files
+.DS_Store
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Log files
+*.log
+
+# Environment variables file
+.env
+
+# Temporary files
+*.tmp
