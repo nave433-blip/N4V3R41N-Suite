@@ -1,16 +1,18 @@
 # N4V3R41N: The Ultimate Unified iOS Exploit & Bypass Suite
 
-![Version](https://img.shields.io/badge/version-5.0.0-cyan)
+![Version](https://img.shields.io/badge/version-5.0.0--ULTRA-magenta)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
 ![License](https://img.shields.io/badge/license-Unlicense-blue)
 
-**N4V3R41N** (pronounced *Never-Rain*) is a professional-grade, unified toolset designed for iOS security research, jailbreaking, and activation bypass. It bridges the gap between legacy A5 devices and the latest A16+ hardware by consolidating industry-leading exploit vectors into a single, cinematic CLI experience.
+**N4V3R41N** (pronounced *Never-Rain*) is a professional-grade, unified toolset designed for iOS security research, jailbreaking, and activation bypass. This **ULTRA** edition integrates the absolute latest features from the community's most advanced forks.
 
 ## 🚀 Key Features
 
 *   **Cinematic Interactive TUI**: A high-fidelity, hacker-style dashboard for real-time device diagnostics and command execution.
 *   **Advanced A12+ Bypass (Download28)**: Integrated sandbox escape vector for iPhone XS through iPhone 15+ models, featuring automated GUID extraction.
-*   **SparseRestore Integration**: Leverages CVE-2024-44258 to deliver malicious backup payloads via `MobileBackup2`.
+*   **SparseRestore & Path-C**: Leverages CVE-2024-44258 and advanced restore logic for seamless activation state manipulation.
+*   **Purple Mode (Diagnostic)**: Support for entering diagnostic mode on A10-A11 devices for low-level NAND/SRAM research.
+*   **Path-B Identity Fix**: Automated serial string manipulation (`PWND:[checkm8]` injection) to bypass newer activation daemon security.
 *   **Signal Repair & Preservation**: Intelligent cellular capability classification (GSM/MEID/Dual) and baseband patching to maintain signal post-bypass.
 *   **Native Rust Core**: A high-performance Rust-based orchestrator (`n4v3r41n-core`) for low-level USB and DFU operations.
 *   **N4V3R41N Doctor**: Automated system integrity check and dependency repair module.
