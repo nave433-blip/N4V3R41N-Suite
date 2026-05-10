@@ -1,0 +1,53 @@
+[package]
+name = "n4v3r41n-cli"
+version = "5.0.0"
+edition = "2021"
+authors = ["Evan Shipley"]
+description = "The Ultimate Unified iOS Exploit, Jailbreak, and Activation Bypass Suite (A5–A15+)"
+license = "Unlicense"
+readme = "README.md"
+
+[dependencies]
+# CLI Framework
+clap = { version = "4.0", features = ["derive"] }
+comfy-table = "7.0"
+
+# Logging
+log = "0.4"
+env_logger = "0.10"
+lazy_static = "1.4"
+
+# Async Runtime & Web Server
+tokio = { version = "1.0", features = ["full"] }
+warp = "0.3"
+reqwest = { version = "0.11", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# SSH Client
+ssh2 = "0.9"
+
+# USB Communication
+rusb = "0.9"
+
+# Error Handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Utilities
+chrono = "0.4"
+sha2 = "0.10"
+rand = "0.8"
+hex = "0.4"
+libc = "0.2"
+
+[build-dependencies]
+bindgen = "0.71"
+cc = "1.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
