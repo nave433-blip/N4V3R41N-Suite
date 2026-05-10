@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "n4v3r41n-suite"
+version = "5.0.0"
+authors = [
+  { name="Evan Shipley", email="evan@example.com" },
+]
+description = "The Ultimate Unified iOS Exploit and Bypass Suite"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: The Unlicense (Unlicense)",
+    "Operating System :: MacOS",
+    "Topic :: Security",
+]
+dependencies = [
+    "rich",
+    "fastapi",
+    "uvicorn",
+    "requests",
+    "pyusb",
+    "paramiko",
+    "GitPython",
+    "click",
+    "pymobiledevice3",
+]
+
+[project.scripts]
+n4v3r41n = "n4v3r41n:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
