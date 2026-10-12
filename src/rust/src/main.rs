@@ -15,6 +15,7 @@ use clap::{Arg, Command};
 use std::process;
 
 mod device;
+mod doctor;
 mod exploits;
 mod server;
 mod ssh;
@@ -23,7 +24,21 @@ mod utils;
 /// checkm8 exploit parameters. See src/chip_db.rs for attribution.
 pub mod chip_db;
 
-use device::{DeviceInfo, list_devices};
+use comfy_table::{Cell, Table};
+
+fn print_chip_table(chips: impl Iterator<Item = chip_db::ChipInfo>) {
+    let mut table = Table::new();
+    table.set_header(vec!["CPID", "Name", "Marketing", "checkm8"]);
+    for c in chips {
+        table.add_row(vec![
+            Cell::new(format!("0x{:04X}", c.cpid)),
+            Cell::new(c.name),
+            Cell::new(c.marketing),
+            Cell::new(if c.checkm8_vulnerable { "yes" } else { "no" }),
+        ]);
+    }
+    println!("{table}");
+}
 
 #[tokio::main]
 async fn main() {
@@ -33,9 +48,12 @@ async fn main() {
         .version("9.1.0-ULTRA")
         .author("Evan Shipley")
         .about("Native Rust iOS Exploit Suite - Orchestrator")
-        .subcommand(Command::new("list-devices").about("List connected iOS devices"))
-        .subcommand(Command::new("chip-db").about("Look up an Apple SoC by CPID (e.g. chip-db 0x8947); no arg lists the table")
-            .arg(Arg::new("cpid").help("Chip CPID in hex, e.g. 0x8947")))
+        .subcommand(Command::new("list-devices").about("List connected Apple USB devices (DFU/Recovery/Normal)"))
+        .subcommand(Command::new("doctor").about("Check host environment: USB access, helper tools, platform"))
+        .subcommand(Command::new("checkm8").about("checkm8 pre-flight: find DFU device, identify its chip, show exploit parameters"))
+        .subcommand(Command::new("chip-db").about("Look up an Apple SoC by CPID, name, or marketing string (e.g. chip-db 0x8947, chip-db A11); no arg lists the table")
+            .arg(Arg::new("query").help("CPID in hex (0x8947), chip name (A11), or marketing string"))
+            .arg(Arg::new("vulnerable").short('v').long("vulnerable").action(clap::ArgAction::SetTrue).help("List only checkm8-vulnerable chips")))
         .subcommand(Command::new("sparse-restore").about("Run SparseRestore CVE-2024-44258 bypass"))
         .subcommand(Command::new("signal-detect").about("Detect device cellular capabilities"))
         .subcommand(Command::new("repair-all").about("Run deep system repair suite"))
@@ -61,35 +79,73 @@ async fn main() {
 
     match matches.subcommand() {
         Some(("list-devices", _)) => {
-            let devices = device::list_devices();
-            if devices.is_empty() {
-                error!("No devices detected.");
-                process::exit(1);
-            }
-            for dev in devices {
-                println!("{:?}", dev);
+            match device::scan_usb() {
+                Ok(devices) => {
+                    if devices.is_empty() {
+                        println!("No Apple USB devices detected.");
+                        println!("Tip: put a device in DFU mode (black screen, 05ac:1227) and re-run.");
+                        process::exit(1);
+                    }
+                    let mut table = Table::new();
+                    table.set_header(vec!["Bus", "Addr", "VID:PID", "Mode", "CPID", "Chip", "checkm8"]);
+                    for d in &devices {
+                        table.add_row(vec![
+                            Cell::new(d.bus.to_string()),
+                            Cell::new(d.address.to_string()),
+                            Cell::new(format!("{:04x}:{:04x}", d.vid, d.pid)),
+                            Cell::new(d.mode.label()),
+                            Cell::new(d.cpid.map(|c| format!("0x{c:04X}")).unwrap_or_else(|| "-".into())),
+                            Cell::new(d.chip_name().unwrap_or("-")),
+                            Cell::new(match d.checkm8_vulnerable() {
+                                Some(true) => "yes",
+                                Some(false) => "no",
+                                None => "-",
+                            }),
+                        ]);
+                    }
+                    println!("{table}");
+                }
+                Err(e) => {
+                    error!("{e}");
+                    process::exit(1);
+                }
             }
         }
+        Some(("doctor", _)) => {
+            doctor::run();
+        }
+        Some(("checkm8", _)) => {
+            process::exit(exploits::checkm8::run_preflight());
+        }
         Some(("chip-db", args)) => {
-            match args.get_one::<String>("cpid") {
-                Some(cpid_str) => {
-                    let cpid = u32::from_str_radix(cpid_str.trim_start_matches("0x"), 16)
-                        .unwrap_or_else(|_| { error!("Invalid CPID '{}'. Use hex, e.g. 0x8947.", cpid_str); process::exit(1); });
-                    match chip_db::lookup(cpid) {
+            if args.get_flag("vulnerable") {
+                print_chip_table(chip_db::vulnerable_chips().copied());
+                return;
+            }
+            match args.get_one::<String>("query") {
+                Some(q) => {
+                    // Accept "0x8947" hex, bare "8947", or a name like "A11".
+                    let by_cpid = q
+                        .trim_start_matches("0x")
+                        .trim_start_matches("0X")
+                        .chars()
+                        .all(|c| c.is_ascii_hexdigit())
+                        .then(|| u32::from_str_radix(q.trim_start_matches("0x").trim_start_matches("0X"), 16).ok())
+                        .flatten()
+                        .and_then(chip_db::lookup);
+                    match by_cpid.or_else(|| chip_db::find_by_name(q)) {
                         Some(c) => {
                             println!("CPID 0x{:04X} — {} ({})", c.cpid, c.name, c.marketing);
                             println!("  checkm8 vulnerable: {}", c.checkm8_vulnerable);
                             println!("  large_leak={} overwrite_pad=0x{:x} hole={}", c.config_large_leak, c.config_overwrite_pad, c.config_hole);
                             println!("  insecure_mem_base=0x{:x}", c.insecure_memory_base);
+                            println!("  patch_addr=0x{:x} memcpy=0x{:x} aes_crypto_cmd=0x{:x}", c.patch_addr, c.memcpy_addr, c.aes_crypto_cmd);
                         }
-                        None => { error!("Unknown CPID 0x{:04X}", cpid); process::exit(1); }
+                        None => { error!("Unknown chip '{}'. Try 'chip-db' with no args to list the table.", q); process::exit(1); }
                     }
                 }
                 None => {
-                    println!("{:<8} {:<6} {:<38} {}", "CPID", "Name", "Marketing", "checkm8");
-                    for c in chip_db::CHIP_TABLE {
-                        println!("0x{:04X}   {:<6} {:<38} {}", c.cpid, c.name, c.marketing, if c.checkm8_vulnerable { "yes" } else { "no" });
-                    }
+                    print_chip_table(chip_db::CHIP_TABLE.iter().copied());
                 }
             }
         }

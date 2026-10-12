@@ -2,6 +2,30 @@
 
 All notable changes to this project, committed locally (pushes to GitHub need Evan's explicit word each time).
 
+## [Unreleased] — 2026-10-12 Wave 2
+### Added
+- `device.rs`: real USB device detection via rusb — replaces the mock
+  device with actual enumeration of Apple devices (DFU 05ac:1227,
+  Recovery 05ac:1281, Normal), iSerial string reads, CPID/ECID parsing
+  from the DFU identity string, and chip-database cross-referencing.
+  5 new unit tests.
+- `checkm8` CLI subcommand: honest checkm8 pre-flight — finds a DFU
+  device, identifies its chip via the SoC database, prints exact exploit
+  parameters and a readiness checklist; guides non-DFU devices through
+  entering DFU mode. (The BootROM exploit itself still needs the native
+  backend or external tooling — stated explicitly.)
+- `doctor` CLI subcommand: real environment diagnostics — libusb/USB
+  enumeration, `idevice_id`/`ideviceinfo`/`irecovery`/`python3` in PATH,
+  platform + native-backend status. Non-zero exit on failure.
+- `chip-db`: accepts chip names and marketing strings
+  (`chip-db A11`, `chip-db "iPhone X"`), plus `-v/--vulnerable` to list
+  only checkm8-vulnerable chips. Table output via comfy-table. 5 new tests.
+- `dist/install.ps1`: proper Windows installer — copies the exe to
+  `%LocalAppData%\N4V3R41N\bin`, adds it to the user PATH (no admin),
+  verifies with `n4v3r41n-cli --version`. `docs/WINDOWS.md` documents it.
+- Gemini status: still quota-exhausted (free tier, 429, ~16h retry) —
+  wave 2 ran as solo senior review, same as wave 1.
+
 ## [Unreleased] — 2026-10-12 workstream
 ### Added
 - `docs/AUDIT.md`: full engineering audit (claimed-vs-actual gap list, competitor R&D).

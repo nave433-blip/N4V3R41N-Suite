@@ -682,6 +682,31 @@ pub fn is_checkm8_vulnerable(cpid: u32) -> bool {
     lookup(cpid).map(|c| c.checkm8_vulnerable).unwrap_or(false)
 }
 
+/// Find a chip by name or marketing string (case-insensitive).
+/// Accepts e.g. "A11", "a11", "8015" (hex CPID without 0x), "iPhone X".
+pub fn find_by_name(query: &str) -> Option<&'static ChipInfo> {
+    let q = query.trim().to_lowercase();
+    if q.is_empty() {
+        return None;
+    }
+    // Bare hex number -> treat as CPID.
+    if let Ok(cpid) = u32::from_str_radix(q.trim_start_matches("0x"), 16) {
+        if let Some(c) = lookup(cpid) {
+            return Some(c);
+        }
+    }
+    CHIP_TABLE.iter().find(|c| {
+        c.name.to_lowercase() == q
+            || c.name.to_lowercase().contains(&q)
+            || c.marketing.to_lowercase().contains(&q)
+    })
+}
+
+/// All checkm8-vulnerable chips, in table order.
+pub fn vulnerable_chips() -> impl Iterator<Item = &'static ChipInfo> {
+    CHIP_TABLE.iter().filter(|c| c.checkm8_vulnerable)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -714,5 +739,37 @@ mod tests {
                 assert!(!c.checkm8_vulnerable, "{} should not be checkm8-vulnerable", c.name);
             }
         }
+    }
+
+    #[test]
+    fn find_by_name_exact() {
+        let c = find_by_name("A11").expect("A11 must be found by name");
+        assert_eq!(c.cpid, 0x8015);
+    }
+
+    #[test]
+    fn find_by_name_case_insensitive() {
+        assert!(find_by_name("a11").is_some());
+        assert!(find_by_name("iphone x").is_some());
+    }
+
+    #[test]
+    fn find_by_name_hex_cpid() {
+        let c = find_by_name("8015").expect("hex CPID must resolve");
+        assert_eq!(c.name, "A11");
+    }
+
+    #[test]
+    fn find_by_name_unknown() {
+        assert!(find_by_name("not-a-chip").is_none());
+        assert!(find_by_name("").is_none());
+    }
+
+    #[test]
+    fn vulnerable_chips_all_flagged() {
+        for c in vulnerable_chips() {
+            assert!(c.checkm8_vulnerable);
+        }
+        assert!(vulnerable_chips().count() >= 15);
     }
 }

@@ -1,5 +1,44 @@
 # N4V3R41N-Suite on Windows
 
+## Dependencies
+
+The Rust core vendors everything it needs — no separate installs for the
+CLI itself:
+
+| Dependency | How it's provided |
+|---|---|
+| Rust crates (clap, tokio, rusb, …) | `cargo` fetches from crates.io on build |
+| libusb (for `rusb`) | `libusb1-sys` compiles its own copy when system headers are absent — verified building on a machine without `libusb-dev` |
+| WinUSB driver (DFU USB access) | **not vendored** — install via Zadig (see below) |
+| `idevice_id` / `irecovery` (optional) | libimobiledevice Windows builds; `doctor` warns if absent |
+| C checkm8 backend | macOS only (Xcode CLT + Homebrew `libusb`, `openssl@3`, `libimobiledevice`, `libssh2`, `curl`); skipped on Windows by `build.rs` |
+
+### Zadig / WinUSB (required for DFU mode)
+
+DFU-mode devices (`05ac:1227`) need the WinUSB driver on Windows:
+
+1. Put the device in DFU mode (black screen).
+2. Open [Zadig](https://zadig.akeo.ie/), select `Apple Mobile Device (DFU Mode)`.
+3. Install the WinUSB driver for it.
+
+Run `n4v3r41n-cli doctor` afterwards to confirm USB enumeration works.
+
+## Install (recommended)
+
+1. Download the Windows zip from the latest GitHub release and extract it.
+2. Right-click `install.ps1` → **Run with PowerShell**, or from a terminal in
+   that folder:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\install.ps1
+   ```
+   The installer copies `n4v3r41n-cli.exe` to
+   `%LocalAppData%\N4V3R41N\bin`, adds it to your user PATH (no admin
+   rights needed), and verifies with `n4v3r41n-cli --version`.
+3. Open a **new** terminal and run `n4v3r41n-cli doctor` to check your setup.
+
+For DFU-mode USB access, install the WinUSB driver for the DFU device
+with [Zadig](https://zadig.akeo.ie/) (device `05AC:1227`).
+
 ## Build
 
 The Rust core (`src/rust/`) cross-compiles from Linux with the
@@ -18,10 +57,14 @@ Output: `src/rust/target/x86_64-pc-windows-gnu/release/n4v3r41n-cli.exe`
 
 ## What works on Windows
 
-- `chip-db` — Apple SoC database (25 chips, CPID lookup, checkm8 flags).
-  Pure Rust, fully portable.
-- `list-devices`, `doctor`, `info` — device detection paths that don't
-  need the native C backend.
+- `chip-db` — Apple SoC database (25 chips; CPID / name / marketing lookup,
+  `--vulnerable` filter). Pure Rust, fully portable.
+- `list-devices` — real USB enumeration via rusb: finds Apple devices in
+  DFU (05ac:1227), Recovery, and Normal modes, parses CPID/ECID from the
+  DFU serial string, cross-references the chip database.
+- `checkm8` — pre-flight workflow: identifies a DFU device's chip and
+  prints exact exploit parameters + readiness checklist.
+- `doctor` — environment diagnostics (USB stack, helper tools, platform).
 - `sparse-restore`, `signal-detect`, `repair-all`, `identity-fix`,
   `purple-mode`, `r1nderpest`, `mix-bypass` — these print an honest
   "requires macOS build" message instead of crashing or pretending.
