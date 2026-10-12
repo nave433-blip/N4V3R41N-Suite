@@ -1,29 +1,28 @@
-// build.rs
-extern crate bindgen;
-extern crate cc;
+// build.rs — N4V3R41N-Core native backend build script.
+//
+// The C checkm8 backend (exploits/c/checkm8) is compiled on Apple targets
+// only: it was developed against macOS (Xcode CLT, Homebrew libusb /
+// openssl@3 / libimobiledevice) and needs porting for other platforms
+// (see PLACEHOLDERS.md). On Linux/Windows the pure-Rust core builds and
+// runs; C-backed commands report an honest "requires macOS build" error.
 
 use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    println!("cargo:rerun-if-changed=wrapper.h");
     println!("cargo:rerun-if-changed=exploits/c/checkm8/");
 
+    let target_vendor = env::var("CARGO_CFG_TARGET_VENDOR").unwrap_or_default();
+    if target_vendor != "apple" {
+        println!(
+            "cargo:warning=N4V3R41N C backend skipped (Apple-only; building pure-Rust core for target_vendor={})",
+            target_vendor
+        );
+        return;
+    }
+
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    
-    // Bindgen
-    let builder = bindgen::Builder::default()
-        .header("wrapper.h")
-        .clang_arg("-I/usr/local/include")
-        .clang_arg("-I/usr/local/opt/openssl@3/include")
-        .clang_arg("-I/usr/local/opt/libssh2/include")
-        .clang_arg("-I/usr/local/opt/curl/include");
-
-    let bindings = builder.generate().expect("Unable to generate bindings");
-
-    bindings
-        .write_to_file(out_path.join("bindings.rs"))
-        .expect("Couldn't write bindings!");
+    let _ = out_path;
 
     // Set common flags
     let deployment_target = "10.15";
@@ -33,19 +32,19 @@ fn main() {
     let mut build = cc::Build::new();
     build.flag(&format!("-mmacosx-version-min={}", deployment_target));
     let base_c_path = "exploits/c/checkm8";
-    
+
     build.include(base_c_path);
     build.include(format!("{}/activation", base_c_path));
     build.include(format!("{}/bypass", base_c_path));
     build.include(format!("{}/device", base_c_path));
     build.include(format!("{}/util", base_c_path));
-    
+
     build.include("/usr/local/include");
     build.include("/usr/local/opt/openssl@3/include");
     build.include("/usr/local/opt/libusb/include/libusb-1.0");
     build.include("/usr/local/opt/libssh2/include");
     build.include("/usr/local/opt/curl/include");
-    
+
     let c_files = [
         "checkm8.c",
         "checkm8_patch.c",
@@ -100,7 +99,7 @@ fn main() {
     build_cpp.include(format!("{}/device", base_c_path));
     build_cpp.include(format!("{}/util", base_c_path));
     build_cpp.include("/usr/local/include");
-    
+
     build_cpp.file(format!("{}/bypass/new_features.cpp", base_c_path));
     build_cpp.compile("libn4v3r41n_core_cpp.a");
 
@@ -110,7 +109,7 @@ fn main() {
     println!("cargo:rustc-link-search=native=/usr/local/opt/libusb/lib");
     println!("cargo:rustc-link-search=native=/usr/local/opt/libssh2/lib");
     println!("cargo:rustc-link-search=native=/usr/local/opt/curl/lib");
-    
+
     println!("cargo:rustc-link-lib=dylib=imobiledevice-1.0");
     println!("cargo:rustc-link-lib=dylib=irecovery-1.0");
     println!("cargo:rustc-link-lib=dylib=usbmuxd-2.0");

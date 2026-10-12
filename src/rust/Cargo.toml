@@ -53,11 +53,8 @@ once_cell = "1.18"
 aes = "0.8"
 memoffset = "0.9"
 plist = "1.5"
-objc = "0.2"
-objc-foundation = "0.1"
 
 [build-dependencies]
-bindgen = "0.71"
 cc = "1.0"
 
 [profile.release]
