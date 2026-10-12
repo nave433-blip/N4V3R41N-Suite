@@ -19,6 +19,9 @@ mod exploits;
 mod server;
 mod ssh;
 mod utils;
+/// Apple SoC database ported from tr4mpass (chip_db) — CPID lookup +
+/// checkm8 exploit parameters. See src/chip_db.rs for attribution.
+pub mod chip_db;
 
 use device::{DeviceInfo, list_devices};
 
@@ -31,6 +34,8 @@ async fn main() {
         .author("Evan Shipley")
         .about("Native Rust iOS Exploit Suite - Orchestrator")
         .subcommand(Command::new("list-devices").about("List connected iOS devices"))
+        .subcommand(Command::new("chip-db").about("Look up an Apple SoC by CPID (e.g. chip-db 0x8947); no arg lists the table")
+            .arg(Arg::new("cpid").help("Chip CPID in hex, e.g. 0x8947")))
         .subcommand(Command::new("sparse-restore").about("Run SparseRestore CVE-2024-44258 bypass"))
         .subcommand(Command::new("signal-detect").about("Detect device cellular capabilities"))
         .subcommand(Command::new("repair-all").about("Run deep system repair suite"))
@@ -65,6 +70,29 @@ async fn main() {
                 println!("{:?}", dev);
             }
         }
+        Some(("chip-db", args)) => {
+            match args.get_one::<String>("cpid") {
+                Some(cpid_str) => {
+                    let cpid = u32::from_str_radix(cpid_str.trim_start_matches("0x"), 16)
+                        .unwrap_or_else(|_| { error!("Invalid CPID '{}'. Use hex, e.g. 0x8947.", cpid_str); process::exit(1); });
+                    match chip_db::lookup(cpid) {
+                        Some(c) => {
+                            println!("CPID 0x{:04X} — {} ({})", c.cpid, c.name, c.marketing);
+                            println!("  checkm8 vulnerable: {}", c.checkm8_vulnerable);
+                            println!("  large_leak={} overwrite_pad=0x{:x} hole={}", c.config_large_leak, c.config_overwrite_pad, c.config_hole);
+                            println!("  insecure_mem_base=0x{:x}", c.insecure_memory_base);
+                        }
+                        None => { error!("Unknown CPID 0x{:04X}", cpid); process::exit(1); }
+                    }
+                }
+                None => {
+                    println!("{:<8} {:<6} {:<38} {}", "CPID", "Name", "Marketing", "checkm8");
+                    for c in chip_db::CHIP_TABLE {
+                        println!("0x{:04X}   {:<6} {:<38} {}", c.cpid, c.name, c.marketing, if c.checkm8_vulnerable { "yes" } else { "no" });
+                    }
+                }
+            }
+        }
         Some(("sparse-restore", _)) => {
             exploits::sparse_restore::run();
         }
@@ -78,11 +106,25 @@ async fn main() {
             exploits::path_b::run_identity_fix();
         }
         Some(("purple-mode", _)) => {
-            extern "C" { fn purple_mode_enter(dev: *mut std::ffi::c_void) -> i32; }
-            unsafe { purple_mode_enter(std::ptr::null_mut()); }
+            #[cfg(target_vendor = "apple")]
+            {
+                extern "C" { fn purple_mode_enter(dev: *mut std::ffi::c_void) -> i32; }
+                unsafe { purple_mode_enter(std::ptr::null_mut()); }
+            }
+            #[cfg(not(target_vendor = "apple"))]
+            {
+                error!("purple-mode requires the native C backend, which is only compiled on macOS builds.");
+                process::exit(1);
+            }
         }
         Some(("r1nderpest", _)) => {
+            #[cfg(target_vendor = "apple")]
             exploits::r1nderpest::run();
+            #[cfg(not(target_vendor = "apple"))]
+            {
+                error!("r1nderpest requires macOS (Mach kernel APIs). Not available on this platform.");
+                process::exit(1);
+            }
         }
         Some(("spiderpro", _)) => {
             exploits::spiderpro::run();
