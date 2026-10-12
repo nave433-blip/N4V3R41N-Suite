@@ -22,9 +22,21 @@ All notable changes to this project, committed locally (pushes to GitHub need Ev
   only checkm8-vulnerable chips. Table output via comfy-table. 5 new tests.
 - `dist/install.ps1`: proper Windows installer — copies the exe to
   `%LocalAppData%\N4V3R41N\bin`, adds it to the user PATH (no admin),
-  verifies with `n4v3r41n-cli --version`. `docs/WINDOWS.md` documents it.
+  verifies with `n4v3r41n-cli --version`, prints Zadig/WinUSB guidance.
+  Syntax-checked with the real PowerShell parser and functionally tested
+  end-to-end under pwsh 7.4.6 (copy + PATH + version check all pass).
+  `docs/WINDOWS.md` documents it.
+- Dependency audit: every `use` in the tree now resolves to a declared
+  crate — removed 9 unused declarations (plist, reqwest, ssh2,
+  tokio-rustls, hex, memoffset, aes, anyhow, thiserror). `rusb`'s libusb
+  is confirmed to build without system `libusb-dev` headers. External
+  tools (Zadig/WinUSB, optional libimobiledevice tools) are covered by
+  `doctor`, the installer output, and `docs/WINDOWS.md`. C backend inputs
+  (Xcode CLT, Homebrew libusb/openssl@3/libimobiledevice) documented in
+  `build.rs` + `docs/WINDOWS.md`; still Apple-only by design.
 - Gemini status: still quota-exhausted (free tier, 429, ~16h retry) —
   wave 2 ran as solo senior review, same as wave 1.
+- Tests: 19/19 pass (9 baseline + 10 new).
 
 ## [Unreleased] — 2026-10-12 workstream
 ### Added
