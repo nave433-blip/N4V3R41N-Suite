@@ -21,7 +21,7 @@
 !include "MUI2.nsh"
 
 !define APP_NAME "N4V3R41N-Suite"
-!define APP_VERSION "5.2.1"
+!define APP_VERSION "5.2.2"
 !define EXE_NAME "n4v3r41n-cli.exe"
 !define INSTALL_SUBDIR "N4V3R41N\bin"
 
@@ -157,6 +157,7 @@ Section "Install"
   SetOutPath "$INSTDIR"
   File "../${EXE_NAME}"
   File /oname=WINDOWS.txt "../WINDOWS.txt"
+  File /oname=instructions.txt "../instructions.txt"
 
   ; Uninstaller + Add/Remove Programs entry.
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -179,6 +180,8 @@ Section "Install"
     "$WINDIR\System32\cmd.exe" '/k "$INSTDIR\${EXE_NAME}" doctor'
   CreateShortcut "$SMPROGRAMS\${APP_NAME}\N4V3R41N Help.lnk" \
     "$WINDIR\System32\cmd.exe" '/k "$INSTDIR\${EXE_NAME}" --help'
+  CreateShortcut "$SMPROGRAMS\${APP_NAME}\Instructions.lnk" \
+    "$WINDIR\notepad.exe" "$INSTDIR\instructions.txt"
   CreateShortcut "$SMPROGRAMS\${APP_NAME}\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
 
   ; PATH (user level, no admin).
@@ -186,19 +189,36 @@ Section "Install"
   Call AddToUserPath
 
   ; Sanity check: the installed exe must at least answer --version.
-  ; Warn (don't abort) if it can't run, so a first-time Windows quirk
-  ; is visible instead of silently "installed but broken".
+  ; nsExec pushes two values (exit code + output); accept either
+  ; order, and warn — don't abort — if it can't run, showing both
+  ; values so a real failure is diagnosable instead of silent.
   nsExec::ExecToStack '"$INSTDIR\${EXE_NAME}" --version'
   Pop $0
-  StrCmp $0 "0" version_ok
+  Pop $1
+  StrCpy $R0 "N4V3R41N"
+  StrCmp $0 "0" code_is_first
+  StrCmp $1 "0" code_is_second
+  Goto version_bad
+  code_is_first:
+    StrCpy $R1 $1
+    Call PathContains
+    StrCmp $R2 "1" version_ok
+    Goto version_bad
+  code_is_second:
+    StrCpy $R1 $0
+    Call PathContains
+    StrCmp $R2 "1" version_ok
+    Goto version_bad
+  version_bad:
     MessageBox MB_ICONEXCLAMATION|MB_OK \
-      "Installed, but $\"$INSTDIR\${EXE_NAME}$\" --version did not run cleanly.$\n$\nTry opening a NEW terminal and running: n4v3r41n-cli doctor"
+      "Installed, but $\"$INSTDIR\${EXE_NAME}$\" --version did not run cleanly.$\n$\nFirst value: $0$\nSecond value: $1$\n$\nTry opening a NEW terminal and running: n4v3r41n-cli doctor"
   version_ok:
 SectionEnd
 
 Section "Uninstall"
   Delete "$INSTDIR\${EXE_NAME}"
   Delete "$INSTDIR\WINDOWS.txt"
+  Delete "$INSTDIR\instructions.txt"
   Delete "$INSTDIR\Uninstall.exe"
   RMDir "$INSTDIR"
   ; Remove the parent folder too if it is now empty.
@@ -206,6 +226,7 @@ Section "Uninstall"
 
   Delete "$SMPROGRAMS\${APP_NAME}\N4V3R41N Doctor.lnk"
   Delete "$SMPROGRAMS\${APP_NAME}\N4V3R41N Help.lnk"
+  Delete "$SMPROGRAMS\${APP_NAME}\Instructions.lnk"
   Delete "$SMPROGRAMS\${APP_NAME}\Uninstall.lnk"
   RMDir "$SMPROGRAMS\${APP_NAME}"
 

@@ -93,7 +93,8 @@ def main():
 
     print("\nUpgrade complete. Recommended next steps:")
     print(" - Review git status: git status")
-    print(" - Run any build commands you normally use (e.g., ./build.sh, cargo build --release)")
+    print(" - Build the Rust CLI: cd src/rust && cargo build --release")
+    print(" - On Windows, or double-click: scripts\\build-windows.bat")
     print(" - Restart the TUI: ./n4v3r41n")
 
 if __name__ == '__main__':

@@ -2,6 +2,37 @@
 
 All notable changes to this project, committed locally (pushes to GitHub need Evan's explicit word each time).
 
+## [5.2.2] — 2026-10-28 native Windows port
+### Changed
+- `server/auto_spoof.rs`: the hosts-file edit is now native on
+  Windows — it appends straight to
+  `C:\Windows\System32\drivers\etc\hosts` instead of running
+  `sudo sh -c "echo ... >> /etc/hosts"`, which silently did nothing
+  on Windows. Without an admin cmd window it prints the exact
+  lines to add by hand instead of failing quietly.
+- `doctor.rs`: Windows Python installs register `python`, not
+  `python3`, so doctor now accepts either; libimobiledevice hints
+  point at the Windows builds; new `adb` check; prints the admin
+  cmd + Zadig WinUSB notes on Windows.
+- `exploits/bookra1n.rs`: calls `ideviceenterrecovery` (a real
+  libimobiledevice tool, shipped in the Windows builds) instead of
+  the nonexistent `ideviceenter`.
+- `scripts/upgrade.py`: the stale `./build.sh` next-step hint is
+  now the real `cargo build --release` (plus `scripts\build-windows.bat`
+  on Windows).
+- `dist/installer/n4v3r41n-setup.nsi`: the `--version` sanity
+  check now pops both nsExec values and accepts either order
+  (exit code + output), warning with both values shown on failure
+  instead of possibly warning on a healthy install.
+### Added
+- `dist/instructions.txt`: plain-language Windows instructions —
+  install, running in cmd, every command, Windows requirements
+  (Zadig, libimobiledevice builds, admin for port 443/hosts),
+  and troubleshooting including the "prints nothing" case.
+  Bundled in the setup wizard (Start Menu shortcut) and the zip.
+- `scripts/build-windows.bat`: native Windows build script
+  (cargo + MSVC toolchain, no MinGW needed on the user's PC).
+
 ## [5.2.1] — 2026-10-28 one-click Windows install
 ### Fixed
 - `dist/install.ps1`: the final self-check no longer fails the whole

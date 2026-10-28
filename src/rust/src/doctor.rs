@@ -67,8 +67,43 @@ fn check_tool(name: &'static str, hint: &'static str) -> Check {
     }
 }
 
+fn check_python() -> Check {
+    // Windows Python installs register `python`, not `python3`, so on
+    // Windows accept either name instead of warning about a Python
+    // install that is actually there.
+    #[cfg(target_os = "windows")]
+    let names: &[&str] = &["python3", "python"];
+    #[cfg(not(target_os = "windows"))]
+    let names: &[&str] = &["python3"];
+    for name in names {
+        if let Ok(path) = which::which(name) {
+            return Check {
+                name: "python",
+                status: Status::Pass,
+                detail: format!("found at {}", path.display()),
+            };
+        }
+    }
+    Check {
+        name: "python",
+        status: Status::Warn,
+        detail: "not in PATH — needed by some helper scripts".into(),
+    }
+}
+
 pub fn run() {
     info!("Running environment diagnostics");
+    // Windows libimobiledevice builds ship the same tool names as .exe
+    // files, and `which` already resolves PATHEXT, so the checks are the
+    // same — only the install hint changes per platform.
+    #[cfg(target_os = "windows")]
+    let idevice_hint = "install the Windows libimobiledevice build and add it to PATH";
+    #[cfg(not(target_os = "windows"))]
+    let idevice_hint = "install libimobiledevice for normal-mode device info";
+    #[cfg(target_os = "windows")]
+    let irecovery_hint = "install the Windows libimobiledevice build and add it to PATH";
+    #[cfg(not(target_os = "windows"))]
+    let irecovery_hint = "install libimobiledevice for recovery-mode communication";
     let mut checks = vec![
         Check {
             name: "Platform",
@@ -76,19 +111,11 @@ pub fn run() {
             detail: format!("{} / {}", std::env::consts::OS, std::env::consts::ARCH),
         },
         check_libusb(),
-        check_tool(
-            "idevice_id",
-            "install libimobiledevice for normal-mode device info",
-        ),
-        check_tool(
-            "ideviceinfo",
-            "install libimobiledevice for normal-mode device info",
-        ),
-        check_tool(
-            "irecovery",
-            "install libimobiledevice for recovery-mode communication",
-        ),
-        check_tool("python3", "needed by some helper scripts"),
+        check_tool("idevice_id", idevice_hint),
+        check_tool("ideviceinfo", idevice_hint),
+        check_tool("irecovery", irecovery_hint),
+        check_python(),
+        check_tool("adb", "install Android platform-tools for android-host"),
     ];
 
     #[cfg(target_vendor = "apple")]
@@ -110,6 +137,11 @@ pub fn run() {
         if c.status == Status::Fail {
             failed = true;
         }
+    }
+    #[cfg(target_os = "windows")]
+    {
+        println!("Note: run in an admin cmd window for auto-spoof (port 443) and hosts-file edits.");
+        println!("Note: DFU-mode USB access needs the WinUSB driver — install it with Zadig (https://zadig.akeo.ie/).");
     }
     if failed {
         std::process::exit(1);

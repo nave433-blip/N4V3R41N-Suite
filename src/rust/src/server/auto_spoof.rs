@@ -12,8 +12,9 @@ use rustls::{Certificate as RustlsCertificate, PrivateKey};
 use serde::Serialize;
 use chrono::Utc;
 use sha2::{Sha256, Digest};
-use log::info;
+use log::{info, error};
 use once_cell::sync::Lazy;
+#[cfg(not(target_os = "windows"))]
 use duct::cmd;
 
 #[derive(Debug, Clone, Serialize)]
@@ -115,7 +116,38 @@ fn setup_hosts_spoof() {
         "127.0.0.1 fmipmobile.icloud.com",
     ];
 
-    for entry in entries {
-        let _ = cmd!("sudo", "sh", "-c", &format!("echo '{}' >> /etc/hosts", entry)).run();
+    // Windows equivalent of the Unix `sudo sh -c "echo ... >> /etc/hosts"`:
+    // append straight to the Windows hosts file. This needs an admin
+    // command window; without one the write fails and we say so plainly
+    // instead of silently doing nothing.
+    #[cfg(target_os = "windows")]
+    {
+        let system_root =
+            std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".to_string());
+        let hosts_path = format!("{system_root}\\System32\\drivers\\etc\\hosts");
+        match std::fs::OpenOptions::new().append(true).open(&hosts_path) {
+            Ok(mut f) => {
+                use std::io::Write;
+                for entry in entries {
+                    if let Err(e) = writeln!(f, "{entry}") {
+                        error!("Could not write to {hosts_path}: {e}");
+                        break;
+                    }
+                }
+            }
+            Err(e) => {
+                error!(
+                    "Could not open {hosts_path} ({e}). Re-run in an admin cmd window, or add these lines to the hosts file by hand:\n{}",
+                    entries.join("\n")
+                );
+            }
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        for entry in entries {
+            let _ = cmd!("sudo", "sh", "-c", &format!("echo '{entry}' >> /etc/hosts")).run();
+        }
     }
 }

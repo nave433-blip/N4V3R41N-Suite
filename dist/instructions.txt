@@ -1,0 +1,103 @@
+N4V3R41N-Suite — Windows instructions
+=====================================
+
+N4V3R41N-Suite is a command-line toolkit for Apple-device research:
+USB device detection, checkm8 pre-flight checks, an Apple chip
+database, and related utilities. It runs in cmd, the same way it
+runs in a Linux or Mac terminal: you type a command, it prints
+its answer, and you read it.
+
+INSTALL
+-------
+Easiest way (recommended):
+  1. Download N4V3R41N-Setup-v5.2.2.exe from the GitHub release page.
+  2. Double-click it, then Next, Next, Finish.
+     - No admin rights needed for a normal install.
+     - It adds the tool to your user PATH and puts shortcuts in the
+       Start Menu (N4V3R41N Doctor, N4V3R41N Help, Instructions).
+     - The setup file is not code-signed, so SmartScreen may say
+       "Windows protected your PC" on first run. Click "More info",
+       then "Run anyway". That is a one-time click.
+
+Zip way:
+  1. Download n4v3r41n-v5.2.2-windows.zip and extract the whole
+     folder (do not run anything from inside the zip window).
+  2. Double-click Install.bat in the extracted folder.
+
+After installing, open a NEW cmd window (old ones do not pick up
+the PATH change). To open cmd: press Win+R, type cmd, press Enter.
+
+RUNNING IT IN CMD
+-----------------
+Type a command and press Enter, exactly like in a terminal:
+
+  n4v3r41n-cli --version        show the version
+  n4v3r41n-cli --help           list every command
+  n4v3r41n-cli doctor          check your setup (start here)
+  n4v3r41n-cli list-devices    list connected Apple USB devices
+  n4v3r41n-cli chip-db         list the Apple chip database
+  n4v3r41n-cli chip-db A11     look up one chip (or: chip-db 0x8947)
+  n4v3r41n-cli checkm8         checkm8 pre-flight for a DFU device
+
+More commands (see --help for the full list):
+  sparse-restore, signal-detect, repair-all, identity-fix,
+  purple-mode, r1nderpest, spiderpro, mix-bypass, cloudpass,
+  bookra1n, auto-spoof, passcode-bypass, brute-force, fmi-off,
+  account-logout, passcode-ext, android-host, ai-chain,
+  spyware-intel.
+
+Honest limits on Windows:
+  - Commands that need the native C backend (purple-mode, r1nderpest
+    and some exploit paths) are macOS-only and say so instead of
+    pretending. The pre-flight, lookup, and diagnostic commands
+    work fully on Windows.
+  - auto-spoof binds port 443 and edits the hosts file, so it
+    needs an admin cmd window: right-click cmd, "Run as
+    administrator", then run the command. Without admin it prints
+    exactly what to add to the hosts file by hand.
+
+WHAT ELSE YOU MAY NEED (Windows)
+--------------------------------
+  - DFU-mode USB access: install the WinUSB driver with Zadig
+    (https://zadig.akeo.ie/). Put the device in DFU mode (black
+    screen), pick "Apple Mobile Device (DFU Mode)" in Zadig, and
+    install the WinUSB driver for it. Then run doctor to confirm.
+  - Normal-mode / recovery tools (idevice_id, ideviceinfo,
+    irecovery): install a Windows build of libimobiledevice and
+    add it to PATH. Doctor warns if they are missing.
+  - Android commands (android-host): install Android
+    platform-tools so adb is on PATH.
+  - Helper scripts: install Python (python.org) if doctor warns
+    python is missing. Windows Python registers `python`, which
+    doctor accepts.
+
+TROUBLESHOOTING
+---------------
+  - "Command not recognized" in cmd: you are in an old cmd window.
+    Close it, open a new one, and try again.
+  - SmartScreen warning on the setup file: "More info" then
+    "Run anyway" (see Install above).
+  - A command prints NOTHING and returns straight to the prompt:
+    something on your PC is stopping the program from starting
+    (usually antivirus/Defender flagging an unsigned tool).
+    Check: Windows Security > Virus & threat protection >
+    Protection history, and look for n4v3r41n-cli entries. If
+    one is blocked there, add the install folder
+    (%LOCALAPPDATA%\N4V3R41N\bin) as an exclusion, then try
+    again. To see the failure code, run:
+      n4v3r41n-cli --version
+      echo %ERRORLEVEL%
+    A non-zero code with no output means it was stopped before
+    it could print. As a test, copy n4v3r41n-cli.exe to your
+    Desktop and run it from there: if it prints there but not
+    from the install folder, something is blocking execution
+    from that folder.
+  - USB device not found: run doctor first, install the WinUSB
+    driver with Zadig for DFU mode (above), and re-plug the
+    device.
+
+UNINSTALL
+---------
+  Settings > Apps > N4V3R41N-Suite > Uninstall, or use the
+  Uninstall shortcut in the Start Menu folder. It removes the
+  files, the shortcuts, and the PATH entry.
