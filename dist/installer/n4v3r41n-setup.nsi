@@ -19,8 +19,6 @@
 ; a failure, and it only happens for the setup file itself.
 
 !include "MUI2.nsh"
-!include "StrFunc.nsh"
-${StrContains}
 
 !define APP_NAME "N4V3R41N-Suite"
 !define APP_VERSION "5.2.1"
@@ -28,14 +26,14 @@ ${StrContains}
 !define INSTALL_SUBDIR "N4V3R41N\bin"
 
 Name "${APP_NAME} ${APP_VERSION}"
-OutFile "dist\N4V3R41N-Setup-v${APP_VERSION}.exe"
+OutFile "../N4V3R41N-Setup-v${APP_VERSION}.exe"
 InstallDir "$LOCALAPPDATA\${INSTALL_SUBDIR}"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
 
 !define MUI_ABORTWARNING
-!define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
-!define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+!define MUI_ICON "${NSISDIR}/Contrib/Graphics/Icons/modern-install.ico"
+!define MUI_UNICON "${NSISDIR}/Contrib/Graphics/Icons/modern-uninstall.ico"
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_TEXT "Run N4V3R41N Doctor now (checks your setup)"
 !define MUI_FINISHPAGE_RUN_FUNCTION RunDoctor
@@ -49,14 +47,38 @@ SetCompressor /SOLID lzma
 !insertmacro MUI_LANGUAGE "English"
 
 ; ---- PATH helpers (user PATH, HKCU, broadcast the change) ----------------
-!define HWND_BROADCAST 0xFFFF
-!define WM_WININICHANGE 0x1A
+; HWND_BROADCAST / WM_WININICHANGE come from the MUI includes.
+
+; PathContains: $R0 = needle, $R1 = haystack. Sets $R2 to "1" if the
+; needle occurs in the haystack, else "0". Built-ins only (no StrFunc).
+Function PathContains
+  StrLen $R3 $R0
+  StrLen $R4 $R1
+  IntOp $R4 $R4 - $R3
+  StrCpy $R2 "0"
+  IntCmp $R4 0 check notfound check
+  check:
+    StrCpy $R5 0
+  loop:
+    StrCpy $R6 $R1 $R3 $R5
+    StrCmp $R6 $R0 found
+    IntOp $R5 $R5 + 1
+    IntCmp $R5 $R4 loop loop done
+  found:
+    StrCpy $R2 "1"
+  done:
+    Return
+  notfound:
+    Return
+FunctionEnd
 
 Function AddToUserPath
   ; $0 = dir to add. Leaves $0 untouched on failure.
   ReadRegStr $1 HKCU "Environment" "Path"
-  ${StrContains} $2 $0 $1
-  StrCmp $2 "" 0 done
+  StrCpy $R0 $0
+  StrCpy $R1 $1
+  Call PathContains
+  StrCmp $R2 "1" done
     StrCmp $1 "" 0 append
       WriteRegExpandStr HKCU "Environment" "Path" $0
       Goto broadcast
@@ -67,12 +89,11 @@ Function AddToUserPath
   done:
 FunctionEnd
 
-Function RemoveFromUserPath
-  ; $0 = dir to remove.
+Function un.RemoveFromUserPath
+  ; Uninstaller copy of RemoveFromUserPath ($0 = dir to remove).
+  ; NSIS requires uninstall functions to carry the "un." prefix.
   ReadRegStr $1 HKCU "Environment" "Path"
   StrCmp $1 "" done
-  ; Rebuild the path without $0 (case-insensitive compare, trailing
-  ; backslashes ignored).
   StrCpy $2 ""
   StrCpy $3 0
   loop:
@@ -83,7 +104,6 @@ Function RemoveFromUserPath
     IntOp $3 $3 + 1
     Goto loop
   found_sep:
-    ; $5 holds one entry; keep it unless it equals $0.
     StrCpy $6 $5
     loop_trim:
       StrCpy $7 $6 1 -1
@@ -105,7 +125,6 @@ Function RemoveFromUserPath
       IntOp $3 $3 + 1
       Goto loop
   finish:
-    ; Trailing entry (no trailing semicolon in the original).
     StrCmp $5 "" write
     StrCpy $6 $5
     loop_trim2:
@@ -136,8 +155,8 @@ FunctionEnd
 
 Section "Install"
   SetOutPath "$INSTDIR"
-  File "dist\${EXE_NAME}"
-  File /oname=WINDOWS.txt "dist\WINDOWS.txt"
+  File "../${EXE_NAME}"
+  File /oname=WINDOWS.txt "../WINDOWS.txt"
 
   ; Uninstaller + Add/Remove Programs entry.
   WriteUninstaller "$INSTDIR\Uninstall.exe"
