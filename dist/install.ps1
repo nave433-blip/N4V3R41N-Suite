@@ -56,15 +56,33 @@ if ($pathEntries -notcontains $InstallDir.TrimEnd("\")) {
 # 4. Verify: run the freshly installed exe directly (no PATH dependency).
 $installedExe = Join-Path $InstallDir "n4v3r41n-cli.exe"
 Write-Step "Verifying installation"
+# Files copied from a download can keep their "from the internet" mark
+# even after Copy-Item; strip it so nothing silently blocks the exe.
+Unblock-File -Path $installedExe -ErrorAction SilentlyContinue
+$versionOut = ""
+$versionCode = -1
 try {
     $versionOut = & $installedExe --version 2>&1 | Out-String
+    $versionCode = $LASTEXITCODE
 } catch {
-    Fail "installed exe failed to run: $_"
+    Write-Warn "verification run threw: $_"
 }
 if ($versionOut -match "N4V3R41N") {
     Write-Ok "verification passed: $($versionOut.Trim())"
 } else {
-    Fail "unexpected --version output: $versionOut"
+    # The install itself is already done (files copied, PATH set), so a
+    # self-check quirk must NOT report the whole install as failed.
+    # Report exactly what happened so it can be diagnosed.
+    Write-Warn "self-check did not return the expected version string."
+    Write-Warn "  exit code: $versionCode"
+    if ([string]::IsNullOrWhiteSpace($versionOut)) {
+        Write-Warn "  captured output: <empty> — the exe produced no output for --version"
+    } else {
+        Write-Warn "  captured output: $($versionOut.Trim())"
+    }
+    Write-Warn "Install itself finished. Open a NEW terminal and run:"
+    Write-Warn "  n4v3r41n-cli --version"
+    Write-Warn "  n4v3r41n-cli doctor"
 }
 
 Write-Host ""

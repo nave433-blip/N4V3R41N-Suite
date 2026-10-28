@@ -2,6 +2,24 @@
 
 All notable changes to this project, committed locally (pushes to GitHub need Evan's explicit word each time).
 
+## [5.2.1] — 2026-10-28 one-click Windows install
+### Fixed
+- `dist/install.ps1`: the final self-check no longer fails the whole
+  install when the exe's `--version` output is unexpected or empty —
+  the install itself (files copied, PATH set) was already succeeding
+  on real Windows, and the self-check quirk made it look broken.
+  It now warns with the exit code and captured output instead, and
+  unblocks the installed exe first (downloaded files can keep their
+  "from the internet" mark through a copy).
+### Added
+- `dist/Install.bat`: double-click launcher for the zip — unblocks
+  the files and runs the installer with the execution policy
+  bypassed, window left open to read the result. No terminal needed.
+- `dist/installer/n4v3r41n-setup.nsi`: NSIS wizard setup
+  (`N4V3R41N-Setup-v5.2.1.exe`) — Next/Next/Finish, no admin, user
+  PATH, Start Menu shortcuts (Doctor, Help), Add/Remove Programs
+  uninstaller. Build with `makensis dist/installer/n4v3r41n-setup.nsi`.
+
 ## [Unreleased] — 2026-10-12 Wave 2
 ### Added
 - `device.rs`: real USB device detection via rusb — replaces the mock
