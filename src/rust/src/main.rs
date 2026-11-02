@@ -75,6 +75,16 @@ async fn main() {
         .subcommand(Command::new("android-host").about("Initiate Android USB Host automation"))
         .subcommand(Command::new("ai-chain").about("Run AI-optimized A12+ kernel chain"))
         .subcommand(Command::new("spyware-intel").about("Run spyware behavioral research and simulation"))
+        .subcommand(Command::new("hacktivate")
+            .about("Run hacktivator checkm8 iCloud bypass via SSH-over-USB (A9–A11, jailbroken device)")
+            .arg(Arg::new("dry-run").long("dry-run").action(clap::ArgAction::SetTrue).help("Print the planned steps without touching the device"))
+            .arg(Arg::new("ssh-password").long("ssh-password").default_value("alpine").help("Device root SSH password (default is the public jailbreak default)"))
+            .arg(Arg::new("port").long("port").default_value("4444").value_parser(clap::value_parser!(u16)).help("Local port for iproxy forwarding"))
+            .arg(Arg::new("device-port").long("device-port").default_value("44").value_parser(clap::value_parser!(u16)).help("Device-side SSH port"))
+            .arg(Arg::new("patch").long("patch").help("Local patched mobileactivationd binary (skips download)"))
+            .arg(Arg::new("plist").long("plist").help("Local LaunchDaemon plist (skips download)"))
+            .arg(Arg::new("patch-url").long("patch-url").help("Override URL for the patched mobileactivationd"))
+            .arg(Arg::new("plist-url").long("plist-url").help("Override URL for the LaunchDaemon plist")))
         .get_matches();
 
     match matches.subcommand() {
@@ -222,6 +232,9 @@ async fn main() {
         Some(("spyware-intel", _)) => {
             exploits::spyware_research::run_spyware_analysis();
             exploits::spyware_research::simulate_0click();
+        }
+        Some(("hacktivate", args)) => {
+            process::exit(exploits::hacktivator::run_from_matches(args));
         }
         _ => {
             println!("Use --help for usage.");

@@ -116,6 +116,8 @@ pub fn run() {
         check_tool("irecovery", irecovery_hint),
         check_python(),
         check_tool("adb", "install Android platform-tools for android-host"),
+        check_tool("iproxy", "install libimobiledevice — required for hacktivate (SSH-over-USB bypass)"),
+        check_tool("sshpass", "install sshpass — required for hacktivate (SSH-over-USB bypass)"),
     ];
 
     #[cfg(target_vendor = "apple")]

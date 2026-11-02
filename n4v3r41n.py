@@ -447,6 +447,13 @@ def run_sparse_restore():
     run_command(["./n4v3r41n-core", "sparse-restore"])
     console.print("[green][+] SparseRestore payload delivered via MobileBackup2.[/green]")
 
+def run_hacktivate():
+    """Run hacktivator checkm8 iCloud bypass via SSH over USB."""
+    console.print(Panel("[bold green]INITIATING PHASE: HACKTIVATOR iCloud Bypass[/bold green]\n[dim]checkm8 devices (A9–A11), SSH over USB[/dim]", border_style="green"))
+    # Integration with Rust-core (clean-room port of the public Hackt1vator/applera1n workflow)
+    run_command(["./n4v3r41n-core", "hacktivate"])
+    console.print("[green][+] hacktivator bypass sequence complete.[/green]")
+
 # --- MAIN CINEMATIC MENU ---
 
 def make_layout() -> Layout:
@@ -581,6 +588,7 @@ def main_menu():
         ("10", "[bold white]NETWORK INTEL[/bold white]", "Apple server IPs & bypass domains"),
         ("11", "[bold cyan]ANDROID HOST[/bold cyan]", "Android USB Host automation"),
         ("12", "[bold red]N4V3R41N DOCTOR[/bold red]", "System health & dependency fix"),
+        ("13", "[bold green]HACKTIVATOR[/bold green]", "checkm8 iCloud bypass via SSH"),
         ("0", "DISCONNECT", "Safe exit from suite")
     ]
     
@@ -627,6 +635,9 @@ def main_menu():
     elif choice == "12":
         check_dependencies()
         input("\nPress Enter to return...")
+    elif choice == "13":
+        console.print("[bold green]INITIATING PHASE: hacktivator iCloud Bypass[/bold green]")
+        run_hacktivate()
     elif choice == "0":
         console.print("[bold red]SYSTEM OFFLINE.[/bold red]")
         sys.exit(0)
@@ -649,6 +660,8 @@ def full_auto_mode(device):
             run_command(["./n4v3r41n-core", "identity-fix"])
             progress.add_task("Uploading custom ramdisk...", total=None)
             run_command(["./exploits/tr4mpass/tr4mpass", "--verbose"])
+        console.print("[green][*] CHECKM8 CHAIN COMPLETE. ENGAGING HACKTIVATOR BYPASS...[/green]")
+        run_hacktivate()
             
     elif chip in ["A12", "A13", "A14", "A15", "A16"]:
         console.print("[magenta][*] MODERN CHIP DETECTED. DEPLOYING PATH-B (DOWNLOAD28)...[/magenta]")
@@ -686,6 +699,11 @@ def spoof():
 def doctor():
     """Check system health."""
     check_dependencies()
+
+@cli.command()
+def hacktivate():
+    """Run hacktivator checkm8 iCloud bypass."""
+    run_hacktivate()
 
 if __name__ == "__main__":
     cli()
