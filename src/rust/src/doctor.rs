@@ -160,6 +160,7 @@ pub fn run() {
         check_tool("curl", "install curl - used by sshrd wrapper downloads"),
         check_tool("unzip", "install unzip - used by sshrd wrapper downloads"),
         check_rp2350(),
+        check_tool("php", "install php - required to run the vendored a12-bypass activation server"),
     ];
 
     #[cfg(target_vendor = "apple")]

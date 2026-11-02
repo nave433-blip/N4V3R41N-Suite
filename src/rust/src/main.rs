@@ -118,6 +118,15 @@ async fn main() {
             .arg(Arg::new("dry-run").long("dry-run").action(clap::ArgAction::SetTrue).help("Print what would run without touching the device"))
             .arg(Arg::new("patchfinder-dir").long("patchfinder-dir").help("Override vendored kernel-patchfinder directory"))
             .arg(Arg::new("args").num_args(0..).trailing_var_arg(true).allow_hyphen_values(true).help("Arguments passed through to kernel_patchfinder.py (after --)")))
+        .subcommand(Command::new("a12-bypass")
+            .about("Run vendored A12_Tool_OSS activation server + client (external/a12-bypass; wrapper only)")
+            .long_about("Run vendored A12_Tool_OSS activation bypass (external/a12-bypass; wrapper only, no code copied). Starts the PHP activation server (php -S ip:port -t server/public) and optionally runs the client activator (--client). The client is interactive with hardcoded config — see the vendored README.md for the manual steps.")
+            .arg(Arg::new("dry-run").long("dry-run").action(clap::ArgAction::SetTrue).help("Print what would run without starting anything"))
+            .arg(Arg::new("client").long("client").action(clap::ArgAction::SetTrue).help("Also run the activator.py client after the server starts (interactive)"))
+            .arg(Arg::new("ip").long("ip").help("Bind IP for the PHP server (default: auto-detected LAN IP)"))
+            .arg(Arg::new("port").long("port").value_parser(clap::value_parser!(u16)).default_value("8000").help("Port for the PHP server"))
+            .arg(Arg::new("a12-dir").long("a12-dir").help("Override vendored a12-bypass directory"))
+            .arg(Arg::new("args").num_args(0..).trailing_var_arg(true).allow_hyphen_values(true).help("Arguments passed through to activator.py with --client (after --)")))
         .get_matches();
 
     match matches.subcommand() {
@@ -286,6 +295,9 @@ async fn main() {
         }
         Some(("kernel-patchfinder", args)) => {
             process::exit(exploits::kernel_patchfinder::run_from_matches(args));
+        }
+        Some(("a12-bypass", args)) => {
+            process::exit(exploits::a12_bypass::run_from_matches(args));
         }
         _ => {
             println!("Use --help for usage.");
