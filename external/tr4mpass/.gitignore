@@ -1,0 +1,51 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.obj
+*.exe
+*.lib
+itr4m
+tr4mpass
+tests/run_tests
+tests/run_mock_tests
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.xcodeproj/
+*.xcworkspace/
+
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+credentials.*
+secrets.*
+.irecovery
+
+# Claude Code scaffolding
+.claude/
+
+# Python (if any helper scripts)
+__pycache__/
+*.pyc
+.venv/
+
+# Debug
+*.dSYM/
+core
+core.*

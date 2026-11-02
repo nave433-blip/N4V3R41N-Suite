@@ -118,6 +118,11 @@ pub fn run() {
         check_tool("adb", "install Android platform-tools for android-host"),
         check_tool("iproxy", "install libimobiledevice — required for hacktivate (SSH-over-USB bypass)"),
         check_tool("sshpass", "install sshpass — required for hacktivate (SSH-over-USB bypass)"),
+        check_tool("make", "install build-essential - required to build vendored tr4mpass"),
+        check_tool("cc", "install build-essential - required to build vendored tr4mpass"),
+        check_tool("pkg-config", "install pkg-config - required to build vendored tr4mpass"),
+        check_tool("curl", "install curl - used by sshrd wrapper downloads"),
+        check_tool("unzip", "install unzip - used by sshrd wrapper downloads"),
     ];
 
     #[cfg(target_vendor = "apple")]

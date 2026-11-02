@@ -85,6 +85,17 @@ async fn main() {
             .arg(Arg::new("plist").long("plist").help("Local LaunchDaemon plist (skips download)"))
             .arg(Arg::new("patch-url").long("patch-url").help("Override URL for the patched mobileactivationd"))
             .arg(Arg::new("plist-url").long("plist-url").help("Override URL for the LaunchDaemon plist")))
+        .subcommand(Command::new("tr4mpass")
+            .about("Run vendored tr4mpass iCloud activation lock bypass (external/tr4mpass; wrapper only, no code copied)")
+            .arg(Arg::new("dry-run").long("dry-run").action(clap::ArgAction::SetTrue).help("Print what would run without touching the device"))
+            .arg(Arg::new("rebuild").long("rebuild").action(clap::ArgAction::SetTrue).help("Force rebuild of the vendored tr4mpass binary"))
+            .arg(Arg::new("tr4mpass-dir").long("tr4mpass-dir").help("Override vendored tr4mpass directory"))
+            .arg(Arg::new("args").num_args(0..).trailing_var_arg(true).allow_hyphen_values(true).help("Arguments passed through to tr4mpass (after --)")))
+        .subcommand(Command::new("sshrd")
+            .about("Run vendored SSHRD_Script SSH ramdisk iCloud bypass (external/sshrd; wrapper only, no code copied)")
+            .arg(Arg::new("dry-run").long("dry-run").action(clap::ArgAction::SetTrue).help("Print what would run without touching the device"))
+            .arg(Arg::new("sshrd-dir").long("sshrd-dir").help("Override vendored sshrd directory"))
+            .arg(Arg::new("args").num_args(0..).trailing_var_arg(true).allow_hyphen_values(true).help("Arguments passed through to sshrd.sh (after --)")))
         .get_matches();
 
     match matches.subcommand() {
@@ -235,6 +246,12 @@ async fn main() {
         }
         Some(("hacktivate", args)) => {
             process::exit(exploits::hacktivator::run_from_matches(args));
+        }
+        Some(("tr4mpass", args)) => {
+            process::exit(exploits::tr4mpass::run_from_matches(args));
+        }
+        Some(("sshrd", args)) => {
+            process::exit(exploits::sshrd::run_from_matches(args));
         }
         _ => {
             println!("Use --help for usage.");
