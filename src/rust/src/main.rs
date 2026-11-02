@@ -96,6 +96,28 @@ async fn main() {
             .arg(Arg::new("dry-run").long("dry-run").action(clap::ArgAction::SetTrue).help("Print what would run without touching the device"))
             .arg(Arg::new("sshrd-dir").long("sshrd-dir").help("Override vendored sshrd directory"))
             .arg(Arg::new("args").num_args(0..).trailing_var_arg(true).allow_hyphen_values(true).help("Arguments passed through to sshrd.sh (after --)")))
+        .subcommand(Command::new("usbliter8")
+            .about("Run vendored usbliter8 A12/A13 SecureROM exploit host tool (external/usbliter8; wrapper only)")
+            .long_about("Run vendored usbliter8 A12/A13 SecureROM exploit host tool (external/usbliter8; wrapper only, no code copied).\n\nHARDWARE REQUIRED: RP2350 microcontroller board (e.g. Raspberry Pi Pico 2) flashed with usbliter8 firmware, plus a USB-A to Lightning cable (USB-C breaks exploit timing). The device must already be in pwned DFU.")
+            .arg(Arg::new("dry-run").long("dry-run").action(clap::ArgAction::SetTrue).help("Print what would run without touching the device"))
+            .arg(Arg::new("usbliter8-dir").long("usbliter8-dir").help("Override vendored usbliter8 directory"))
+            .arg(Arg::new("args").num_args(0..).trailing_var_arg(true).allow_hyphen_values(true).help("Arguments passed through to usbliter8ctl (after --)")))
+        .subcommand(Command::new("hello-sn-bypass")
+            .about("Run vendored A12/A13 Hello-screen SN-change bypass (external/hello-sn-bypass; wrapper only)")
+            .arg(Arg::new("dry-run").long("dry-run").action(clap::ArgAction::SetTrue).help("Print what would run without touching the device"))
+            .arg(Arg::new("hello-sn-dir").long("hello-sn-dir").help("Override vendored hello-sn-bypass directory"))
+            .arg(Arg::new("args").num_args(0..).trailing_var_arg(true).allow_hyphen_values(true).help("Arguments passed through to bunny_serial_bypass.py (after --)")))
+        .subcommand(Command::new("activation-backup")
+            .about("Run vendored BUNNY RAMDISK activation backup/restore (external/activation-backup; wrapper only)")
+            .arg(Arg::new("dry-run").long("dry-run").action(clap::ArgAction::SetTrue).help("Print what would run without touching the device"))
+            .arg(Arg::new("restore").long("restore").action(clap::ArgAction::SetTrue).help("Run restore instead of backup"))
+            .arg(Arg::new("backup-dir").long("backup-dir").help("Override vendored activation-backup directory"))
+            .arg(Arg::new("args").num_args(0..).trailing_var_arg(true).allow_hyphen_values(true).help("Arguments passed through (after --)")))
+        .subcommand(Command::new("kernel-patchfinder")
+            .about("Run vendored arm64e kernel patchfinder (external/kernel-patchfinder; wrapper only)")
+            .arg(Arg::new("dry-run").long("dry-run").action(clap::ArgAction::SetTrue).help("Print what would run without touching the device"))
+            .arg(Arg::new("patchfinder-dir").long("patchfinder-dir").help("Override vendored kernel-patchfinder directory"))
+            .arg(Arg::new("args").num_args(0..).trailing_var_arg(true).allow_hyphen_values(true).help("Arguments passed through to kernel_patchfinder.py (after --)")))
         .get_matches();
 
     match matches.subcommand() {
@@ -252,6 +274,18 @@ async fn main() {
         }
         Some(("sshrd", args)) => {
             process::exit(exploits::sshrd::run_from_matches(args));
+        }
+        Some(("usbliter8", args)) => {
+            process::exit(exploits::usbliter8::run_from_matches(args));
+        }
+        Some(("hello-sn-bypass", args)) => {
+            process::exit(exploits::hello_sn_bypass::run_from_matches(args));
+        }
+        Some(("activation-backup", args)) => {
+            process::exit(exploits::activation_backup::run_from_matches(args));
+        }
+        Some(("kernel-patchfinder", args)) => {
+            process::exit(exploits::kernel_patchfinder::run_from_matches(args));
         }
         _ => {
             println!("Use --help for usage.");

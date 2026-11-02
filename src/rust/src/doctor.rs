@@ -91,6 +91,42 @@ fn check_python() -> Check {
     }
 }
 
+fn check_rp2350() -> Check {
+    // RP2350 boards (e.g. Raspberry Pi Pico 2) in BOOTSEL mode present as
+    // 2e8a:0009. We can only report what is on the bus right now; the board
+    // is only needed at exploit time, so absence is a warning, not a failure.
+    // Honest check — no fake detection.
+    match rusb::devices() {
+        Ok(devs) => {
+            let rp2350 = devs
+                .iter()
+                .filter_map(|d| d.device_descriptor().ok())
+                .filter(|desc| desc.vendor_id() == 0x2E8A)
+                .count();
+            if rp2350 > 0 {
+                Check {
+                    name: "RP2350 board",
+                    status: Status::Pass,
+                    detail: format!(
+                        "{rp2350} RP2350 USB device(s) detected - usbliter8 hardware ready"
+                    ),
+                }
+            } else {
+                Check {
+                    name: "RP2350 board",
+                    status: Status::Warn,
+                    detail: "not detected - usbliter8 exploit needs an RP2350 board (e.g. Raspberry Pi Pico 2)                         flashed with usbliter8 firmware, plus a USB-A to Lightning cable                         (USB-C breaks exploit timing)".into(),
+                }
+            }
+        }
+        Err(_) => Check {
+            name: "RP2350 board",
+            status: Status::Warn,
+            detail: "USB enumeration unavailable - cannot check for RP2350 board".into(),
+        },
+    }
+}
+
 pub fn run() {
     info!("Running environment diagnostics");
     // Windows libimobiledevice builds ship the same tool names as .exe
@@ -123,6 +159,7 @@ pub fn run() {
         check_tool("pkg-config", "install pkg-config - required to build vendored tr4mpass"),
         check_tool("curl", "install curl - used by sshrd wrapper downloads"),
         check_tool("unzip", "install unzip - used by sshrd wrapper downloads"),
+        check_rp2350(),
     ];
 
     #[cfg(target_vendor = "apple")]

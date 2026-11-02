@@ -1,0 +1,8 @@
+.DS_Store
+/artifacts
+/build
+/t8020_t8006_shellcode/build
+/t8030_shellcode/build
+/usb_req_handler/build
+/.cache
+/.vscode

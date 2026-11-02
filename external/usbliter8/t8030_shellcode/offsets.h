@@ -1,0 +1,26 @@
+#define PAGE_SIZE       (0x4000)
+#define L1_PAGE_SIZE    (0x2000000)
+
+#define SRAM_BASE   0x19C000000
+#define IO_BASE     0x200000000
+
+#define NEW_SP      0x19C01E000
+
+#define ROM_BASE    0x100000000
+#define ROM_NEW_PA  0x19C390000
+#define ROM_SIZE    0x30000
+
+#define TTBR_BASE       0x19C388000
+#define ROM_PTE_BASE    0x19C38C000
+
+#define TRAMP_OFF       -0x800
+#define HANDLER_OFF     -0x400
+
+#define LOAD_AREA_SIZE  0x358000
+
+#define BOOT_TRAMP      0x100007D00
+#define BOOT_TRAMP_REL  (BOOT_TRAMP - ROM_BASE)
+#define BOOT_TRAMP_LEN  0x400
+
+#define STRLCPY     0x1000116F4
+#define MEMCPY      0x100011770
