@@ -55,6 +55,11 @@ except ImportError:
 console = Console()
 
 # --- CONSTANTS & CONFIG ---
+# Ensure standard Homebrew and local paths are searched
+for extra_path in ["/home/linuxbrew/.linuxbrew/bin", "/home/gnosis/.linuxbrew/bin", str(Path.home() / ".local" / "bin")]:
+    if os.path.exists(extra_path) and extra_path not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = f"{extra_path}:{os.environ.get('PATH', '')}"
+
 BASE_DIR = Path(__file__).parent.absolute()
 EXPLOITS_DIR = BASE_DIR / "exploits"
 PAYLOADS_DIR = BASE_DIR / "payloads"
@@ -66,11 +71,16 @@ CHIP_MAP = {
     "iPhone5,3": "A6", "iPhone5,4": "A6", "iPad3,4": "A6", "iPad3,5": "A6", "iPad3,6": "A6",
     "iPhone6,1": "A7", "iPhone6,2": "A7", "iPad4,1": "A7", "iPad4,2": "A7", "iPad4,3": "A7",
     "iPhone7,1": "A8", "iPhone7,2": "A8", "iPad5,1": "A8", "iPad5,2": "A8",
-    "iPhone8,1": "A11", "iPhone8,2": "A11", "iPhone8,4": "A11",
+    "iPhone8,1": "A9", "iPhone8,2": "A9", "iPhone8,4": "A9",
+    "iPhone9,1": "A10", "iPhone9,2": "A10", "iPhone9,3": "A10", "iPhone9,4": "A10",
+    "iPhone10,1": "A11", "iPhone10,2": "A11", "iPhone10,4": "A11", "iPhone10,5": "A11", "iPhone10,3": "A11", "iPhone10,6": "A11",
     "iPhone11,2": "A12", "iPhone11,4": "A12", "iPhone11,6": "A12", "iPhone11,8": "A12",
     "iPhone12,1": "A13", "iPhone12,3": "A13", "iPhone12,5": "A13",
     "iPhone13,1": "A14", "iPhone13,2": "A14", "iPhone13,3": "A14", "iPhone13,4": "A14",
-    "iPhone14,2": "A15", "iPhone14,3": "A15", "iPhone14,5": "A15",
+    "iPhone14,2": "A15", "iPhone14,3": "A15", "iPhone14,4": "A15", "iPhone14,5": "A15",
+    "iPhone14,7": "A15", "iPhone14,8": "A15",
+    "iPhone15,2": "A16", "iPhone15,3": "A16", "iPhone15,4": "A16", "iPhone15,5": "A16",
+    "iPhone16,1": "A17", "iPhone16,2": "A17",
 }
 
 EXPLOIT_DB = {
@@ -227,9 +237,122 @@ def install_dependencies():
 
 # --- DEVICE DETECTION ---
 
+CPID_MAP = {
+    0x8940: ("S5L8940", "A5"),
+    0x8942: ("S5L8942", "A5"),
+    0x8945: ("S5L8945", "A5X"),
+    0x8950: ("S5L8950", "A6"),
+    0x8955: ("S5L8955", "A6X"),
+    0x8960: ("S5L8960", "A7"),
+    0x7000: ("T7000", "A8"),
+    0x7001: ("T7001", "A8X"),
+    0x8000: ("S8000", "A9"),
+    0x8003: ("S8003", "A9"),
+    0x8001: ("S8001", "A9X"),
+    0x8010: ("T8010", "A10"),
+    0x8011: ("T8011", "A10X"),
+    0x8012: ("T8012", "T2"),
+    0x8015: ("T8015", "A11"),
+    0x8020: ("T8020", "A12"),
+    0x8027: ("T8027", "A12X"),
+    0x8030: ("T8030", "A13"),
+    0x8101: ("T8101", "A14"),
+    0x8110: ("T8110", "A15"),
+    0x8120: ("T8120", "A16"),
+    0x8130: ("T8130", "A17"),
+}
+
+CHECKM8_CPIDS = {
+    0x8940, 0x8942, 0x8945, 0x8950, 0x8955, 0x8960,
+    0x7000, 0x7001, 0x8000, 0x8003, 0x8001, 0x8010,
+    0x8011, 0x8012, 0x8015
+}
+
+def scan_checkm8_dfu() -> Optional[Dict[str, Any]]:
+    """Scan USB devices and irecovery for DFU / checkm8 state."""
+    # 1. Check via pyusb if available
+    try:
+        import usb.core
+        # Apple Vendor ID = 0x05AC
+        # DFU PID = 0x1227, Recovery PID = 0x1281
+        dev = usb.core.find(idVendor=0x05AC, idProduct=0x1227)
+        if dev is not None:
+            serial = dev.serial_number or ""
+            cpid = None
+            ecid = None
+            pwned = "PWND:[" in serial or "PWND" in serial
+            for token in serial.split():
+                if token.startswith("CPID:"):
+                    try:
+                        cpid = int(token.split(":", 1)[1], 16)
+                    except ValueError:
+                        pass
+                elif token.startswith("ECID:"):
+                    try:
+                        ecid = token.split(":", 1)[1]
+                    except ValueError:
+                        pass
+            
+            soc_name, chip = CPID_MAP.get(cpid, ("Unknown", f"CPID:0x{cpid:04X}" if cpid else "Unknown"))
+            is_vulnerable = cpid in CHECKM8_CPIDS if cpid else False
+            mode_str = "PWND DFU (checkm8 active)" if pwned else "DFU (checkm8 eligible)" if is_vulnerable else "DFU (non-checkm8)"
+            
+            return {
+                "udid": ecid or "DFU-MODE",
+                "product_type": f"Apple DFU ({soc_name})",
+                "chip": chip,
+                "ios_version": "BootROM / DFU",
+                "serial": serial,
+                "status": mode_str,
+                "checkm8_vulnerable": is_vulnerable,
+                "checkm8_pwned": pwned,
+                "mode": "DFU",
+                "method": "pyusb"
+            }
+    except Exception:
+        pass
+
+    # 2. Check via irecovery CLI
+    code, out, _ = run_command(["irecovery", "-q"], timeout=3)
+    if code == 0 and out.strip():
+        data = {}
+        for line in out.splitlines():
+            if ": " in line:
+                k, v = line.split(": ", 1)
+                data[k.strip()] = v.strip()
+        
+        mode = data.get("MODE", "Recovery")
+        cpid_str = data.get("CPID", "")
+        cpid = None
+        if cpid_str:
+            try:
+                cpid = int(cpid_str, 16) if not cpid_str.startswith("0x") else int(cpid_str, 0)
+            except ValueError:
+                pass
+        
+        soc_name, chip = CPID_MAP.get(cpid, ("Unknown", f"CPID:{cpid_str}"))
+        is_vulnerable = cpid in CHECKM8_CPIDS if cpid else False
+        pwned = "PWND" in data.get("SRNM", "") or "PWND" in out
+        
+        status_label = f"{mode} (Pwned checkm8)" if pwned else f"{mode} (checkm8 eligible)" if is_vulnerable else f"{mode}"
+        return {
+            "udid": data.get("ECID", "UNKNOWN_ECID"),
+            "product_type": data.get("PRODUCT", f"Apple Device ({soc_name})"),
+            "chip": chip,
+            "ios_version": f"{mode} Mode",
+            "serial": data.get("SRNM", "unknown"),
+            "status": status_label,
+            "checkm8_vulnerable": is_vulnerable,
+            "checkm8_pwned": pwned,
+            "mode": mode,
+            "method": "irecovery"
+        }
+
+    return None
+
 def get_device_info() -> Optional[Dict[str, Any]]:
-    """Cinematic device detection with failover."""
-    # Attempt 1: libimobiledevice
+    """Cinematic device detection with failover (Normal, Recovery, DFU/checkm8)."""
+    # Attempt 1: Normal mode via libimobiledevice
     code, out, err = run_command(["ideviceinfo"], timeout=5)
     if code == 0 and out.strip():
         info = {}
@@ -239,16 +362,23 @@ def get_device_info() -> Optional[Dict[str, Any]]:
                 info[key.strip()] = val.strip()
         
         product_type = info.get("ProductType", "unknown")
+        chip = CHIP_MAP.get(product_type, "unknown")
+        is_checkm8 = chip in ["A5", "A6", "A7", "A8", "A9", "A10", "A11"]
         return {
             "udid": info.get("UniqueDeviceID", "unknown"),
             "product_type": product_type,
-            "chip": CHIP_MAP.get(product_type, "unknown"),
+            "chip": chip,
             "ios_version": info.get("ProductVersion", "unknown"),
             "serial": info.get("SerialNumber", "unknown"),
             "status": info.get("ActivationState", "Activated"),
+            "checkm8_vulnerable": is_checkm8,
+            "checkm8_pwned": False,
+            "mode": "Normal",
             "method": "libimobiledevice"
         }
-    return None
+
+    # Attempt 2: DFU / Recovery / checkm8 mode
+    return scan_checkm8_dfu()
 
 # --- ADVANCED BYPASS VECTORS ---
 
@@ -338,11 +468,19 @@ class Dashboard:
     def __rich__(self) -> Panel:
         table = Table.grid(padding=1)
         if self.device:
-            status_color = "green" if self.device['status'] == "Activated" else "yellow"
+            status_color = "green" if self.device['status'] == "Activated" or "PWND" in self.device['status'] else "yellow"
             table.add_row(Text("STATUS:", style="bold magenta"), Text(self.device['status'], style=f"bold {status_color}"))
             table.add_row(Text("MODEL:", style="bold magenta"), Text(self.device['product_type'], style="cyan"))
             table.add_row(Text("CHIP:", style="bold magenta"), Text(self.device['chip'], style="cyan"))
             table.add_row(Text("VERSION:", style="bold magenta"), Text(self.device['ios_version'], style="cyan"))
+            
+            # Checkm8 indicator
+            if self.device.get("checkm8_pwned"):
+                table.add_row(Text("CHECKM8:", style="bold magenta"), Text("PWNED / ACTIVE", style="bold green"))
+            elif self.device.get("checkm8_vulnerable"):
+                table.add_row(Text("CHECKM8:", style="bold magenta"), Text("VULNERABLE (A5-A11)", style="bold yellow"))
+            else:
+                table.add_row(Text("CHECKM8:", style="bold magenta"), Text("NOT VULNERABLE (A12+)", style="dim"))
         else:
             table.add_row(Text("STATUS:", style="bold magenta"), Text("WAITING FOR DEVICE...", style="bold blink red"))
         
@@ -441,7 +579,7 @@ def main_menu():
         ("8", "[bold magenta]ACCOUNT LOGOUT[/bold magenta]", "Force logout of Apple ID"),
         ("9", "[bold white]AUTO-SPOOF SERVER[/bold white]", "HTTPS/DNS Activation Spoofer"),
         ("10", "[bold white]NETWORK INTEL[/bold white]", "Apple server IPs & bypass domains"),
-        ("11", "[bold cyan]R1NDERPEST KERNEL[/bold cyan]", "A12+ PAC bypass & R/W"),
+        ("11", "[bold cyan]ANDROID HOST[/bold cyan]", "Android USB Host automation"),
         ("12", "[bold red]N4V3R41N DOCTOR[/bold red]", "System health & dependency fix"),
         ("0", "DISCONNECT", "Safe exit from suite")
     ]
@@ -476,14 +614,13 @@ def main_menu():
         console.print("[bold magenta]INITIATING PHASE: FMI Removal (SSH)[/bold magenta]")
         run_command(["./n4v3r41n-core", "fmi-off"])
     elif choice == "8":
-        console.print("[bold cyan]INITIATING PHASE: AI Kernel Chain (A12+)[/bold cyan]")
-        run_command(["./n4v3r41n-core", "ai-chain"])
+        console.print("[bold magenta]INITIATING PHASE: Apple ID Logout[/bold magenta]")
+        run_command(["./n4v3r41n-core", "account-logout"])
     elif choice == "9":
         console.print("[bold white]INITIATING PHASE: Auto-Spoof Server[/bold white]")
         run_command(["./n4v3r41n-core", "auto-spoof"], capture=False)
     elif choice == "10":
-        console.print("[bold yellow]INITIATING PHASE: Spyware Behavioral Research[/bold yellow]")
-        run_command(["./n4v3r41n-core", "spyware-intel"])
+        run_network_intel()
     elif choice == "11":
         console.print("[bold cyan]INITIATING PHASE: Android USB Host Automation[/bold cyan]")
         run_command(["./n4v3r41n-core", "android-host"])
@@ -493,9 +630,6 @@ def main_menu():
     elif choice == "0":
         console.print("[bold red]SYSTEM OFFLINE.[/bold red]")
         sys.exit(0)
-    
-    time.sleep(2)
-    main_menu()
     
     time.sleep(2)
     main_menu()
